@@ -2,10 +2,38 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var gateway: GatewayClient
+    @EnvironmentObject var notifications: NotificationService
 
     var body: some View {
         NavigationStack {
             List {
+                // Notifications
+                Section("Notifications") {
+                    HStack {
+                        Label("Push Notifications", systemImage: "bell.fill")
+                        Spacer()
+                        if notifications.isAuthorized {
+                            Text("Enabled")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        } else {
+                            Button("Enable") {
+                                notifications.requestPermission()
+                            }
+                            .font(.caption)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Agent messages, exec approvals, and reminders")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("Reply directly from notifications")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 // Connection info
                 Section("Connection") {
                     if let config = ConnectionStore.load() {

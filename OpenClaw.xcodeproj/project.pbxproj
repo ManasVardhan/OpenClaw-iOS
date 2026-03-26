@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		08B51454323F499311B6D631 /* BackgroundTaskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E3ED3CC5B1AD227918BF5C /* BackgroundTaskManager.swift */; };
 		0AF1CDA345691B4B0BF0BCB8 /* AnyCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1DC7E88077D65BD6765D37 /* AnyCodable.swift */; };
 		23814E94F15B0F5B0FBE9E4D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85CAD9DE732007259F8E0544 /* SettingsView.swift */; };
 		26F3963A2506E479B0B9A8E6 /* ExecApprovalBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02197A34417D735A9052D7B7 /* ExecApprovalBanner.swift */; };
@@ -19,6 +20,8 @@
 		9C9AD2073AC462C803E10694 /* HapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC06ECAC2D277D036E64AAFD /* HapticFeedback.swift */; };
 		A5E697EB3FD6EF8F37C6A8EE /* OpenClawApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52E2B757311CD1138DA2C284 /* OpenClawApp.swift */; };
 		A6EF54BC4F4BF20FB0159FEE /* GatewayClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31D38CE4149B0461C7615B32 /* GatewayClient.swift */; };
+		AA0BB2A3D78CB74E1C2B87C9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF8351C74B880DD94F66ED2 /* AppDelegate.swift */; };
+		AB749BD319095ACF017E3456 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FA8CB22394080D6EF414B4 /* NotificationService.swift */; };
 		B0D8F4002351078F662D8CF8 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D01B789D50405A2169346D0 /* KeychainHelper.swift */; };
 		B21F1E8235613F03DAA9A517 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D59C0761B5F44480A35FB7 /* ChatView.swift */; };
 		B7510D22D505ABA1DCD5CF2B /* NodesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7628938A2B9D73FF0C3D967 /* NodesView.swift */; };
@@ -39,9 +42,12 @@
 		0F8F974AB6515ADD60DFC217 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		16A502ED1D5583228D405F0E /* BonjourDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BonjourDiscovery.swift; sourceTree = "<group>"; };
 		173A6C151C44CF5E1A6D87F3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		18E3ED3CC5B1AD227918BF5C /* BackgroundTaskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskManager.swift; sourceTree = "<group>"; };
+		1AF8351C74B880DD94F66ED2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1D1DC7E88077D65BD6765D37 /* AnyCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
 		31D38CE4149B0461C7615B32 /* GatewayClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GatewayClient.swift; sourceTree = "<group>"; };
 		3E320027302EE0A16AFF071A /* CronView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CronView.swift; sourceTree = "<group>"; };
+		43FA8CB22394080D6EF414B4 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		52E2B757311CD1138DA2C284 /* OpenClawApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawApp.swift; sourceTree = "<group>"; };
 		63D59C0761B5F44480A35FB7 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		6D01B789D50405A2169346D0 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
@@ -117,9 +123,11 @@
 		2C641DD6ABD751694E0D2A6F /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				18E3ED3CC5B1AD227918BF5C /* BackgroundTaskManager.swift */,
 				16A502ED1D5583228D405F0E /* BonjourDiscovery.swift */,
 				DE350D9121E97FE1164827AF /* ChatService.swift */,
 				31D38CE4149B0461C7615B32 /* GatewayClient.swift */,
+				43FA8CB22394080D6EF414B4 /* NotificationService.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -199,6 +207,7 @@
 		8049EEF688248D29AB3E9926 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				1AF8351C74B880DD94F66ED2 /* AppDelegate.swift */,
 				7BB26699AEA006B2391A1240 /* AppState.swift */,
 				52E2B757311CD1138DA2C284 /* OpenClawApp.swift */,
 				0F8F974AB6515ADD60DFC217 /* RootView.swift */,
@@ -318,7 +327,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				0AF1CDA345691B4B0BF0BCB8 /* AnyCodable.swift in Sources */,
+				AA0BB2A3D78CB74E1C2B87C9 /* AppDelegate.swift in Sources */,
 				EDE41F57027852B8C1FE1617 /* AppState.swift in Sources */,
+				08B51454323F499311B6D631 /* BackgroundTaskManager.swift in Sources */,
 				6455D8F7E80C4BE27A203D73 /* BonjourDiscovery.swift in Sources */,
 				ECB1BCB7B33477C940DAE100 /* ChatMessage.swift in Sources */,
 				EF1FF29ECA106F5ED838BFB4 /* ChatService.swift in Sources */,
@@ -335,6 +346,7 @@
 				B0D8F4002351078F662D8CF8 /* KeychainHelper.swift in Sources */,
 				FFFB9788966286FFD624A963 /* MarkdownText.swift in Sources */,
 				B7510D22D505ABA1DCD5CF2B /* NodesView.swift in Sources */,
+				AB749BD319095ACF017E3456 /* NotificationService.swift in Sources */,
 				A5E697EB3FD6EF8F37C6A8EE /* OpenClawApp.swift in Sources */,
 				C7A101C45F94F5D46789137F /* RootView.swift in Sources */,
 				6CBB91E71B5F5607CA908F66 /* SessionInfo.swift in Sources */,
