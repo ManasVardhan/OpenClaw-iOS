@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ManasVardhan/OpenClaw-iOS/main/assets/banner.png" alt="OpenClaw iOS" width="100%">
+  <img src="assets/banner.png" alt="OpenClaw iOS" width="100%">
 </p>
 
 # OpenClaw iOS
