@@ -17,6 +17,7 @@ final class GatewayClient: ObservableObject {
     @Published var connectionState: ConnectionState = .disconnected
     @Published var serverVersion: String = ""
     @Published var serverHost: String = ""
+    @Published var connId: String = ""
     @Published var uptimeMs: Int = 0
 
     // MARK: - Private
@@ -24,9 +25,12 @@ final class GatewayClient: ObservableObject {
     private var urlSession: URLSession?
     private var pendingRequests: [String: CheckedContinuation<ResponseFrame, Error>] = [:]
     private var eventHandlers: [String: [(AnyCodable?) -> Void]] = [:]
+    private var challengeContinuation: CheckedContinuation<String, Error>?
     private var tickTimer: Timer?
+    private var reconnectTask: Task<Void, Never>?
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private var isReceiving = false
 
     private var config: ConnectionConfig? {
         ConnectionStore.load()
@@ -42,9 +46,12 @@ final class GatewayClient: ObservableObject {
             throw GatewayError.noConfig
         }
 
-        connectionState = .connecting
+        NSLog("[GW] connect() called, url=\(cfg.websocketURL)")
 
-        // Save config for reconnection
+        // Clean up any existing connection
+        cleanupConnection()
+
+        connectionState = .connecting
         ConnectionStore.save(cfg)
 
         let url = cfg.websocketURL
@@ -55,10 +62,34 @@ final class GatewayClient: ObservableObject {
         self.webSocket = ws
         ws.resume()
 
-        // Start receiving
+        // Start the receive loop
         startReceiving()
 
-        // Send connect handshake
+        // Step 1: Wait for connect.challenge event from gateway
+        let nonce: String
+        do {
+            nonce = try await withCheckedThrowingContinuation { continuation in
+                self.challengeContinuation = continuation
+
+                // Timeout after 10 seconds
+                Task {
+                    try? await Task.sleep(for: .seconds(10))
+                    if let cont = self.challengeContinuation {
+                        self.challengeContinuation = nil
+                        NSLog("[GW] TIMEOUT waiting for challenge!")
+                        cont.resume(throwing: GatewayError.timeout)
+                    }
+                }
+            }
+            NSLog("[GW] Got challenge nonce=\(nonce.prefix(8))...")
+        } catch {
+            NSLog("[GW] Challenge wait failed: \(error)")
+            connectionState = .error("No challenge from gateway: \(error.localizedDescription)")
+            throw error
+        }
+
+        // Step 2: Send connect request
+        NSLog("[GW] Sending connect request...")
         let connectParams: [String: Any] = [
             "minProtocol": GatewayProtocolVersion.current,
             "maxProtocol": GatewayProtocolVersion.current,
@@ -69,13 +100,14 @@ final class GatewayClient: ObservableObject {
                 "mode": "ui"
             ] as [String: Any],
             "role": "operator",
-            "scopes": ["operator.read", "operator.write"],
+            "scopes": ["operator.read", "operator.write", "operator.admin", "operator.approvals"],
             "auth": ["token": cfg.token] as [String: Any],
             "locale": Locale.current.identifier,
             "userAgent": "openclaw-ios/0.1.0"
         ]
 
         let response = try await sendRequest(method: "connect", params: connectParams)
+        NSLog("[GW] Connect response ok=\(response.ok)")
 
         guard response.ok else {
             let msg = response.error?.message ?? "Connection rejected"
@@ -83,26 +115,47 @@ final class GatewayClient: ObservableObject {
             throw GatewayError.connectionRejected(msg)
         }
 
-        // Parse hello-ok
+        // Step 3: Parse hello-ok
         if let payloadData = try? JSONSerialization.data(withJSONObject: (response.payload?.value as? [String: Any]) ?? [:]),
            let hello = try? decoder.decode(HelloOkPayload.self, from: payloadData) {
             serverVersion = hello.server?.version ?? ""
             serverHost = hello.server?.host ?? ""
+            connId = hello.server?.connId ?? ""
             if let tickMs = hello.policy?.tickIntervalMs {
                 startTickTimer(intervalMs: tickMs)
             }
+            NSLog("[GW] hello-ok parsed: version=\(serverVersion) host=\(serverHost)")
         }
 
         connectionState = .connected
+        NSLog("[GW] CONNECTION ESTABLISHED!")
     }
 
     func disconnect() {
-        webSocket?.cancel(with: .normalClosure, reason: nil)
-        webSocket = nil
+        cleanupConnection()
+        connectionState = .disconnected
+    }
+
+    private func cleanupConnection() {
+        reconnectTask?.cancel()
+        reconnectTask = nil
         tickTimer?.invalidate()
         tickTimer = nil
+        webSocket?.cancel(with: .normalClosure, reason: nil)
+        webSocket = nil
+        isReceiving = false
+
+        // Fail all pending requests
+        for (_, continuation) in pendingRequests {
+            continuation.resume(throwing: GatewayError.notConnected)
+        }
         pendingRequests.removeAll()
-        connectionState = .disconnected
+
+        // Clear challenge continuation
+        if let cont = challengeContinuation {
+            challengeContinuation = nil
+            cont.resume(throwing: GatewayError.notConnected)
+        }
     }
 
     // MARK: - Send Request
@@ -116,9 +169,14 @@ final class GatewayClient: ObservableObject {
             throw GatewayError.notConnected
         }
 
+        // Protocol requires text frames
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw GatewayError.invalidResponse
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             pendingRequests[frame.id] = continuation
-            ws.send(.data(data)) { [weak self] error in
+            ws.send(.string(text)) { [weak self] error in
                 if let error {
                     Task { @MainActor in
                         self?.pendingRequests.removeValue(forKey: frame.id)
@@ -132,8 +190,9 @@ final class GatewayClient: ObservableObject {
     /// Fire-and-forget send (for ticks, etc.)
     func sendFrame(_ frame: RequestFrame) {
         guard let data = try? encoder.encode(frame),
+              let text = String(data: data, encoding: .utf8),
               let ws = webSocket else { return }
-        ws.send(.data(data)) { _ in }
+        ws.send(.string(text)) { _ in }
     }
 
     // MARK: - Event Subscription
@@ -142,18 +201,38 @@ final class GatewayClient: ObservableObject {
         eventHandlers[eventName, default: []].append(handler)
     }
 
+    func removeAllEventHandlers(for eventName: String) {
+        eventHandlers.removeValue(forKey: eventName)
+    }
+
     // MARK: - Private
 
     private func startReceiving() {
-        webSocket?.receive { [weak self] result in
+        guard !isReceiving else { return }
+        isReceiving = true
+        receiveNext()
+    }
+
+    private func receiveNext() {
+        guard let ws = webSocket else {
+            isReceiving = false
+            return
+        }
+
+        ws.receive { [weak self] result in
             Task { @MainActor in
+                guard let self else { return }
                 switch result {
                 case .success(let message):
-                    self?.handleMessage(message)
-                    self?.startReceiving() // Continue receiving
+                    self.handleMessage(message)
+                    self.receiveNext()
                 case .failure(let error):
-                    self?.connectionState = .error(error.localizedDescription)
-                    self?.attemptReconnect()
+                    NSLog("[GW] receive FAILED: \(error)")
+                    self.isReceiving = false
+                    if self.connectionState == .connected {
+                        self.connectionState = .error(error.localizedDescription)
+                        self.attemptReconnect()
+                    }
                 }
             }
         }
@@ -169,6 +248,7 @@ final class GatewayClient: ObservableObject {
 
         guard let frame = try? decoder.decode(GatewayFrame.self, from: data) else { return }
 
+
         switch frame.type {
         case "res":
             if let id = frame.id, let continuation = pendingRequests.removeValue(forKey: id) {
@@ -180,10 +260,23 @@ final class GatewayClient: ObservableObject {
                     error: frame.error
                 )
                 continuation.resume(returning: response)
+            } else {
             }
 
         case "event":
             if let eventName = frame.event {
+                // Handle connect.challenge specially
+                if eventName == "connect.challenge" {
+                    if let cont = challengeContinuation {
+                        challengeContinuation = nil
+                        let nonce = (frame.payload?.dict?["nonce"] as? String) ?? ""
+                        cont.resume(returning: nonce)
+                    } else {
+                    }
+                }
+
+                // Dispatch to all registered handlers
+                let handlerCount = eventHandlers[eventName]?.count ?? 0
                 eventHandlers[eventName]?.forEach { $0(frame.payload) }
             }
 
@@ -208,10 +301,25 @@ final class GatewayClient: ObservableObject {
     }
 
     private func attemptReconnect() {
-        guard let config else { return }
-        Task {
-            try? await Task.sleep(for: .seconds(3))
-            try? await connect(config: config)
+        reconnectTask?.cancel()
+        reconnectTask = Task {
+            var delay: TimeInterval = 2
+            for attempt in 1...5 {
+                guard !Task.isCancelled else { return }
+                try? await Task.sleep(for: .seconds(delay))
+                guard !Task.isCancelled else { return }
+
+                guard let config else { return }
+
+                do {
+                    try await connect(config: config)
+                    return // Success
+                } catch {
+                    delay = min(delay * 1.5, 30) // Exponential backoff, max 30s
+                }
+            }
+            // Give up after 5 attempts
+            connectionState = .error("Reconnection failed")
         }
     }
 }

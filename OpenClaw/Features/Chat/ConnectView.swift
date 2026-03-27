@@ -145,6 +145,10 @@ struct ConnectView: View {
             .onAppear {
                 loadSavedConfig()
                 discovery.startBrowsing()
+                // Auto-connect if config is saved
+                if let saved = ConnectionStore.load(), !saved.host.isEmpty, !saved.token.isEmpty {
+                    connect()
+                }
             }
         }
     }

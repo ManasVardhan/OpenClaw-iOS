@@ -5,7 +5,6 @@ struct ChatView: View {
     @StateObject private var chatService = ChatService(gateway: .shared)
     @StateObject private var approvalService = ExecApprovalService(gateway: .shared)
     @State private var inputText = ""
-    @State private var scrollProxy: ScrollViewProxy?
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -40,6 +39,13 @@ struct ChatView: View {
                             }
                         }
                     }
+                    .onChange(of: chatService.isAgentTyping) {
+                        if chatService.isAgentTyping {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                proxy.scrollTo("streaming", anchor: .bottom)
+                            }
+                        }
+                    }
                 }
 
                 Divider()
@@ -54,15 +60,16 @@ struct ChatView: View {
                         .padding(.vertical, 10)
                         .background(Color(.systemGray6))
                         .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .onSubmit { sendMessage() }
 
                     Button {
                         sendMessage()
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 32))
-                            .foregroundStyle(inputText.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.orange)
+                            .foregroundStyle(canSend ? Color.orange : Color.gray)
                     }
-                    .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty || chatService.isAgentTyping)
+                    .disabled(!canSend)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -75,13 +82,21 @@ struct ChatView: View {
                     ConnectionStatusDot(state: gateway.connectionState)
                 }
             }
+            .task {
+                await chatService.loadHistory()
+            }
         }
+    }
+
+    private var canSend: Bool {
+        !inputText.trimmingCharacters(in: .whitespaces).isEmpty && !chatService.isAgentTyping
     }
 
     private func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return }
         inputText = ""
+        Haptics.impact(.light)
 
         Task {
             try? await chatService.send(text)
@@ -168,7 +183,7 @@ struct StreamingBubble: View {
                         dotCount = (dotCount + 1) % 3
                     }
                 } else {
-                    Text(text)
+                    MarkdownText(content: text)
                         .font(.body)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)

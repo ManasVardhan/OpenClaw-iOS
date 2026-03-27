@@ -104,13 +104,14 @@ struct CronJobRow: View {
     let job: CronJob
     let onToggle: () async -> Void
     let onRun: () async -> Void
+    @State private var isEnabled: Bool = true
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(job.displayName)
                     .font(.headline)
-                    .foregroundStyle(job.enabled ? .primary : .secondary)
+                    .foregroundStyle(isEnabled ? .primary : .secondary)
 
                 HStack(spacing: 8) {
                     Label(job.scheduleDescription, systemImage: "clock")
@@ -141,14 +142,15 @@ struct CronJobRow: View {
                 }
                 .buttonStyle(.plain)
 
-                Toggle("", isOn: .constant(job.enabled))
+                Toggle("", isOn: $isEnabled)
                     .labelsHidden()
                     .scaleEffect(0.8)
-                    .onChange(of: job.enabled) {
+                    .onChange(of: isEnabled) {
                         Task { await onToggle() }
                     }
             }
         }
         .padding(.vertical, 4)
+        .onAppear { isEnabled = job.enabled }
     }
 }

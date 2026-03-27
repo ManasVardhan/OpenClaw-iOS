@@ -5,7 +5,7 @@ import Network
 @MainActor
 final class BonjourDiscovery: ObservableObject {
     struct Gateway: Identifiable, Equatable {
-        let id: String // endpoint hash
+        let id: String
         let name: String
         let host: String
         let port: Int
@@ -19,7 +19,6 @@ final class BonjourDiscovery: ObservableObject {
     @Published var isSearching = false
 
     private var browser: NWBrowser?
-    private var connections: [NWConnection] = []
 
     func startBrowsing() {
         isSearching = true
@@ -58,9 +57,9 @@ final class BonjourDiscovery: ObservableObject {
 
         browser.start(queue: queue)
 
-        // Auto-stop after 10 seconds
+        // Auto-stop after 15 seconds
         Task {
-            try? await Task.sleep(for: .seconds(10))
+            try? await Task.sleep(for: .seconds(15))
             stopBrowsing()
         }
     }
@@ -77,8 +76,8 @@ final class BonjourDiscovery: ObservableObject {
         for result in results {
             guard case .service(let name, _, _, _) = result.endpoint else { continue }
 
-            // Use the service name as host, default port
-            let host = decodeBonjourName(name) + ".local"
+            let displayName = decodeBonjourName(name)
+            let host = displayName + ".local"
             let port = 18789
 
             discovered.append(Gateway(
@@ -87,7 +86,7 @@ final class BonjourDiscovery: ObservableObject {
                 host: host,
                 port: port,
                 useTLS: false,
-                displayName: decodeBonjourName(name),
+                displayName: displayName,
                 serverVersion: nil,
                 tailnetDns: nil
             ))
@@ -116,6 +115,3 @@ final class BonjourDiscovery: ObservableObject {
         return result
     }
 }
-
-// TXT record parsing handled inline for simplicity.
-// Full TXT extraction can be added when resolving individual services.
