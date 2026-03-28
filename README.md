@@ -4,7 +4,7 @@
 
 # OpenClaw iOS
 
-Native iOS client for [OpenClaw](https://github.com/openclaw/openclaw) -- talk to your AI agent from anywhere.
+Native iOS client for [OpenClaw](https://github.com/openclaw/openclaw) - talk to your AI agent from anywhere.
 
 ## Screenshots
 
@@ -16,12 +16,12 @@ Native iOS client for [OpenClaw](https://github.com/openclaw/openclaw) -- talk t
 
 ## Features
 
-- **Chat** -- Full conversational UI with streaming responses, markdown rendering, and code blocks
-- **Live Agents** -- Real-time monitoring of active agent sessions with status indicators
-- **Sessions** -- Browse and manage active agent sessions
-- **Cron Jobs** -- View, toggle, and trigger scheduled jobs
-- **Nodes** -- See paired devices and their capabilities
-- **Settings** -- Connection management, server info, quick links
+- **Chat** - Full conversational UI with streaming responses, markdown rendering, and code blocks
+- **Live Agents** - Real-time monitoring of active agent sessions with status indicators
+- **Sessions** - Browse and manage active agent sessions
+- **Cron Jobs** - View, toggle, and trigger scheduled jobs
+- **Nodes** - See paired devices and their capabilities
+- **Settings** - Connection management, server info, quick links
 
 ## Architecture
 
@@ -55,24 +55,24 @@ The app connects to your OpenClaw Gateway over WebSocket using the native gatewa
 
 ```
 OpenClaw/
-  App/              -- App entry point, root navigation, state
+  App/              - App entry point, root navigation, state
   Core/
-    Auth/           -- Connection config and keychain storage
-    Networking/     -- GatewayClient (WebSocket), ChatService
-    Protocol/       -- Gateway protocol types, AnyCodable
-    Storage/        -- Keychain helper
+    Auth/           - Connection config and keychain storage
+    Networking/     - GatewayClient (WebSocket), ChatService
+    Protocol/       - Gateway protocol types, AnyCodable
+    Storage/        - Keychain helper
   Features/
-    Agents/         -- Live agent monitoring
-    Chat/           -- Chat UI, connect screen
-    Cron/           -- Cron job management
-    Nodes/          -- Paired device browser
-    Sessions/       -- Session list and details
-    Settings/       -- Connection info, links
+    Agents/         - Live agent monitoring
+    Chat/           - Chat UI, connect screen
+    Cron/           - Cron job management
+    Nodes/          - Paired device browser
+    Sessions/       - Session list and details
+    Settings/       - Connection info, links
   Shared/
-    Components/     -- Reusable UI (status dot, markdown renderer)
-    Extensions/     -- Haptics, utilities
-    Models/         -- Domain models
-  Resources/        -- Assets, Info.plist
+    Components/     - Reusable UI (status dot, markdown renderer)
+    Extensions/     - Haptics, utilities
+    Models/         - Domain models
+  Resources/        - Assets, Info.plist
 ```
 
 ## Network Requirements
