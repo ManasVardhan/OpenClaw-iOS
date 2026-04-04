@@ -7,6 +7,7 @@ struct SettingsView: View {
     var body: some View {
         ZStack {
             Color.surfaceBase.ignoresSafeArea()
+            BlueprintGrid()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
